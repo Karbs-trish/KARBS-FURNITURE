@@ -77,6 +77,18 @@ const cartTotal = document.querySelector("#cartTotal");
 
 let cart = [];
 
+const requiredElements = {
+  productGrid,
+  categoryFilter,
+  sortProducts,
+  cartButton,
+  closeCart,
+  cartPanel,
+  cartCount,
+  cartItems,
+  cartTotal
+};
+
 const moneyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -200,43 +212,56 @@ function hideCart() {
   cartPanel.setAttribute("aria-hidden", "true");
 }
 
-productGrid.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-product-id]");
+function startApp() {
+  const missingElements = Object.entries(requiredElements)
+    .filter(([, element]) => !element)
+    .map(([name]) => name);
 
-  if (!button) {
+  if (missingElements.length > 0) {
+    console.error(`Furniture page is missing: ${missingElements.join(", ")}`);
     return;
   }
 
-  addToCart(Number(button.dataset.productId));
-  openCart();
-});
+  productGrid.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-product-id]");
 
-cartItems.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-remove-id]");
+    if (!button) {
+      return;
+    }
 
-  if (!button) {
-    return;
-  }
+    addToCart(Number(button.dataset.productId));
+    openCart();
+  });
 
-  removeFromCart(Number(button.dataset.removeId));
-});
+  cartItems.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-id]");
 
-cartButton.addEventListener("click", openCart);
-closeCart.addEventListener("click", hideCart);
-categoryFilter.addEventListener("change", renderProducts);
-sortProducts.addEventListener("change", renderProducts);
+    if (!button) {
+      return;
+    }
 
-cartPanel.addEventListener("click", (event) => {
-  if (event.target === cartPanel) {
-    hideCart();
-  }
-});
+    removeFromCart(Number(button.dataset.removeId));
+  });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    hideCart();
-  }
-});
+  cartButton.addEventListener("click", openCart);
+  closeCart.addEventListener("click", hideCart);
+  categoryFilter.addEventListener("change", renderProducts);
+  sortProducts.addEventListener("change", renderProducts);
 
-renderProducts();
-renderCart();
+  cartPanel.addEventListener("click", (event) => {
+    if (event.target === cartPanel) {
+      hideCart();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      hideCart();
+    }
+  });
+
+  renderProducts();
+  renderCart();
+}
+
+startApp();
