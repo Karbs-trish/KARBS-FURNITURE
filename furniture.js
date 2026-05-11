@@ -1,267 +1,183 @@
-const products = [
-  {
-    id: 1,
-    name: "Rowan Lounge Chair",
-    category: "seating",
-    price: 640,
-    rating: 4.8,
-    description: "Low, comfortable seating with a kiln-dried oak frame."
-  },
-  {
-    id: 2,
-    name: "Marlo Nesting Tables",
-    category: "tables",
-    price: 360,
-    rating: 4.6,
-    description: "Two compact tables with rounded walnut tops."
-  },
-  {
-    id: 3,
-    name: "Cove Media Cabinet",
-    category: "storage",
-    price: 1180,
-    rating: 4.9,
-    description: "Sliding doors, cable routing, and generous hidden storage."
-  },
-  {
-    id: 4,
-    name: "Luna Floor Lamp",
-    category: "lighting",
-    price: 245,
-    rating: 4.5,
-    description: "Warm task lighting with a narrow steel base."
-  },
-  {
-    id: 5,
-    name: "Arden Sofa",
-    category: "seating",
-    price: 1540,
-    rating: 4.9,
-    description: "Deep cushions and stain-resistant woven upholstery."
-  },
-  {
-    id: 6,
-    name: "Pillar Dining Table",
-    category: "tables",
-    price: 980,
-    rating: 4.7,
-    description: "A grounded pedestal table that seats six comfortably."
-  },
-  {
-    id: 7,
-    name: "Nook Bookcase",
-    category: "storage",
-    price: 720,
-    rating: 4.4,
-    description: "Open shelving with two lower drawers for daily clutter."
-  },
-  {
-    id: 8,
-    name: "Halo Table Lamp",
-    category: "lighting",
-    price: 185,
-    rating: 4.3,
-    description: "A ceramic lamp with a linen shade and soft glow."
-  }
+const body = document.body;
+const header = document.querySelector(".site-header");
+const navToggle = document.querySelector("#navToggle");
+const navLinks = document.querySelector("#navLinks");
+const navItems = [...document.querySelectorAll(".nav-links a")];
+const heroImages = [...document.querySelectorAll(".hero-image")];
+const revealItems = [...document.querySelectorAll(".reveal")];
+const toTop = document.querySelector("#toTop");
+const searchToggle = document.querySelector("#searchToggle");
+const searchDialog = document.querySelector("#searchDialog");
+const quoteDialog = document.querySelector("#quoteDialog");
+const openQuote = document.querySelector("#openQuote");
+const siteSearch = document.querySelector("#siteSearch");
+const searchResults = document.querySelector("#searchResults");
+const contactForm = document.querySelector("#contactForm");
+
+const searchableSections = [
+  { title: "Sofas and Lounges", url: "#collections", keywords: "sofa lounge couch ottoman living room" },
+  { title: "Beds and Wardrobes", url: "#collections", keywords: "bed bedroom headboard wardrobe cupboard storage" },
+  { title: "Dining Sets", url: "#collections", keywords: "dining table chairs bench kitchen" },
+  { title: "Office Furniture", url: "#collections", keywords: "office desk chair reception filing shelves" },
+  { title: "Custom Builds", url: "#services", keywords: "custom size finish fabric wood material" },
+  { title: "Delivery Support", url: "#services", keywords: "delivery setup transport location" },
+  { title: "Contact KARBS", url: "#contact", keywords: "phone whatsapp email quote order contact" }
 ];
 
-const productGrid = document.querySelector("#productGrid");
-const categoryFilter = document.querySelector("#categoryFilter");
-const sortProducts = document.querySelector("#sortProducts");
-const cartButton = document.querySelector("#cartButton");
-const closeCart = document.querySelector("#closeCart");
-const cartPanel = document.querySelector("#cartPanel");
-const cartCount = document.querySelector("#cartCount");
-const cartItems = document.querySelector("#cartItems");
-const cartTotal = document.querySelector("#cartTotal");
+let activeHeroImage = 0;
 
-let cart = [];
+function setHeaderState() {
+  const scrolled = window.scrollY > 20;
+  header.classList.toggle("is-scrolled", scrolled);
+  toTop.classList.toggle("is-visible", window.scrollY > 600);
+}
 
-const requiredElements = {
-  productGrid,
-  categoryFilter,
-  sortProducts,
-  cartButton,
-  closeCart,
-  cartPanel,
-  cartCount,
-  cartItems,
-  cartTotal
-};
+function closeMenu() {
+  body.classList.remove("menu-open");
+  navToggle.setAttribute("aria-expanded", "false");
+}
 
-const moneyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0
+function toggleMenu() {
+  const isOpen = body.classList.toggle("menu-open");
+  navToggle.setAttribute("aria-expanded", String(isOpen));
+}
+
+function rotateHeroImage() {
+  if (heroImages.length < 2) {
+    return;
+  }
+
+  heroImages[activeHeroImage].classList.remove("active");
+  activeHeroImage = (activeHeroImage + 1) % heroImages.length;
+  heroImages[activeHeroImage].classList.add("active");
+}
+
+function setActiveNav() {
+  const currentSection = [...document.querySelectorAll("main section[id]")]
+    .filter((section) => section.getBoundingClientRect().top <= 180)
+    .pop();
+
+  navItems.forEach((item) => {
+    item.classList.toggle("is-active", currentSection && item.hash === `#${currentSection.id}`);
+  });
+}
+
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.16 }
+);
+
+function openDialog(dialog) {
+  if (!dialog) {
+    return;
+  }
+
+  dialog.showModal();
+  body.classList.add("dialog-open");
+}
+
+function closeDialog(dialog) {
+  if (!dialog) {
+    return;
+  }
+
+  dialog.close();
+  body.classList.remove("dialog-open");
+}
+
+function renderSearchResults(query = "") {
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = searchableSections.filter((item) => {
+    const haystack = `${item.title} ${item.keywords}`.toLowerCase();
+    return normalizedQuery === "" || haystack.includes(normalizedQuery);
+  });
+
+  searchResults.innerHTML = matches
+    .map((item) => `<a href="${item.url}" data-search-result>${item.title}</a>`)
+    .join("");
+}
+
+function prepareWhatsAppMessage(event) {
+  event.preventDefault();
+
+  const formData = new FormData(contactForm);
+  const message = [
+    "Hello KARBS Furniture, I would like a quote.",
+    `Name: ${formData.get("name")}`,
+    `Phone: ${formData.get("phone")}`,
+    `Furniture: ${formData.get("product")}`,
+    `Message: ${formData.get("message") || "No extra details yet."}`
+  ].join("\n");
+
+  window.open(`https://wa.me/263718871433?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+}
+
+navToggle.addEventListener("click", toggleMenu);
+
+navLinks.addEventListener("click", (event) => {
+  if (event.target.closest("a")) {
+    closeMenu();
+  }
 });
 
-function formatMoney(amount) {
-  return moneyFormatter.format(amount);
-}
+window.addEventListener("scroll", () => {
+  setHeaderState();
+  setActiveNav();
+});
 
-function getVisibleProducts() {
-  const selectedCategory = categoryFilter.value;
-  const selectedSort = sortProducts.value;
-
-  const filteredProducts = products.filter((product) => {
-    return selectedCategory === "all" || product.category === selectedCategory;
-  });
-
-  return filteredProducts.sort((first, second) => {
-    if (selectedSort === "priceLow") {
-      return first.price - second.price;
-    }
-
-    if (selectedSort === "priceHigh") {
-      return second.price - first.price;
-    }
-
-    if (selectedSort === "rating") {
-      return second.rating - first.rating;
-    }
-
-    return first.id - second.id;
-  });
-}
-
-function renderProducts() {
-  const visibleProducts = getVisibleProducts();
-
-  productGrid.innerHTML = visibleProducts
-    .map((product) => {
-      return `
-        <article class="product-card">
-          <div class="product-image" aria-hidden="true">
-            <div class="product-shape shape-${product.category}"></div>
-          </div>
-          <div class="product-body">
-            <div class="product-meta">
-              <span>${product.category}</span>
-              <span>${product.rating.toFixed(1)} stars</span>
-            </div>
-            <h3>${product.name}</h3>
-            <p>${product.description}</p>
-            <div class="product-meta">
-              <strong>${formatMoney(product.price)}</strong>
-            </div>
-            <button type="button" data-product-id="${product.id}">Add to cart</button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
-function renderCart() {
-  cartCount.textContent = cart.reduce((total, item) => total + item.quantity, 0);
-
-  if (cart.length === 0) {
-    cartItems.innerHTML = "<p>Your cart is empty.</p>";
-    cartTotal.textContent = formatMoney(0);
-    return;
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 1180) {
+    closeMenu();
   }
+});
 
-  cartItems.innerHTML = cart
-    .map((item) => {
-      const product = products.find((entry) => entry.id === item.id);
+toTop.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
 
-      return `
-        <div class="cart-item">
-          <div>
-            <strong>${product.name}</strong>
-            <p>${item.quantity} x ${formatMoney(product.price)}</p>
-          </div>
-          <button type="button" data-remove-id="${product.id}">Remove</button>
-        </div>
-      `;
-    })
-    .join("");
+searchToggle.addEventListener("click", () => {
+  renderSearchResults();
+  openDialog(searchDialog);
+  siteSearch.focus();
+});
 
-  const total = cart.reduce((sum, item) => {
-    const product = products.find((entry) => entry.id === item.id);
-    return sum + product.price * item.quantity;
-  }, 0);
+openQuote.addEventListener("click", () => openDialog(quoteDialog));
 
-  cartTotal.textContent = formatMoney(total);
-}
+document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+  button.addEventListener("click", () => closeDialog(button.closest("dialog")));
+});
 
-function addToCart(productId) {
-  const existingItem = cart.find((item) => item.id === productId);
+[searchDialog, quoteDialog].forEach((dialog) => {
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      closeDialog(dialog);
+    }
+  });
 
-  if (existingItem) {
-    existingItem.quantity += 1;
-  } else {
-    cart.push({ id: productId, quantity: 1 });
+  dialog.addEventListener("close", () => {
+    body.classList.remove("dialog-open");
+  });
+});
+
+siteSearch.addEventListener("input", () => renderSearchResults(siteSearch.value));
+
+searchResults.addEventListener("click", (event) => {
+  if (event.target.closest("[data-search-result]")) {
+    closeDialog(searchDialog);
   }
+});
 
-  renderCart();
-}
+contactForm.addEventListener("submit", prepareWhatsAppMessage);
 
-function removeFromCart(productId) {
-  cart = cart.filter((item) => item.id !== productId);
-  renderCart();
-}
-
-function openCart() {
-  cartPanel.classList.add("is-open");
-  cartPanel.setAttribute("aria-hidden", "false");
-}
-
-function hideCart() {
-  cartPanel.classList.remove("is-open");
-  cartPanel.setAttribute("aria-hidden", "true");
-}
-
-function startApp() {
-  const missingElements = Object.entries(requiredElements)
-    .filter(([, element]) => !element)
-    .map(([name]) => name);
-
-  if (missingElements.length > 0) {
-    console.error(`Furniture page is missing: ${missingElements.join(", ")}`);
-    return;
-  }
-
-  productGrid.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-product-id]");
-
-    if (!button) {
-      return;
-    }
-
-    addToCart(Number(button.dataset.productId));
-    openCart();
-  });
-
-  cartItems.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-remove-id]");
-
-    if (!button) {
-      return;
-    }
-
-    removeFromCart(Number(button.dataset.removeId));
-  });
-
-  cartButton.addEventListener("click", openCart);
-  closeCart.addEventListener("click", hideCart);
-  categoryFilter.addEventListener("change", renderProducts);
-  sortProducts.addEventListener("change", renderProducts);
-
-  cartPanel.addEventListener("click", (event) => {
-    if (event.target === cartPanel) {
-      hideCart();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      hideCart();
-    }
-  });
-
-  renderProducts();
-  renderCart();
-}
-
-startApp();
+revealItems.forEach((item) => revealObserver.observe(item));
+setHeaderState();
+setActiveNav();
+renderSearchResults();
+setInterval(rotateHeroImage, 5200);
