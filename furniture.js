@@ -25,8 +25,17 @@ const searchableSections = [
 ];
 
 let activeHeroImage = 0;
+let activeDialog = null;
+
+function elementExists(element) {
+  return Boolean(element);
+}
 
 function setHeaderState() {
+  if (!header || !toTop) {
+    return;
+  }
+
   const scrolled = window.scrollY > 20;
   header.classList.toggle("is-scrolled", scrolled);
   toTop.classList.toggle("is-visible", window.scrollY > 600);
@@ -34,10 +43,17 @@ function setHeaderState() {
 
 function closeMenu() {
   body.classList.remove("menu-open");
-  navToggle.setAttribute("aria-expanded", "false");
+
+  if (navToggle) {
+    navToggle.setAttribute("aria-expanded", "false");
+  }
 }
 
 function toggleMenu() {
+  if (!navToggle) {
+    return;
+  }
+
   const isOpen = body.classList.toggle("menu-open");
   navToggle.setAttribute("aria-expanded", String(isOpen));
 }
@@ -62,24 +78,34 @@ function setActiveNav() {
   });
 }
 
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("is-visible");
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.16 }
-);
+let revealObserver = null;
+
+if ("IntersectionObserver" in window) {
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.16 }
+  );
+}
 
 function openDialog(dialog) {
   if (!dialog) {
     return;
   }
 
-  dialog.showModal();
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute("open", "");
+  }
+
+  activeDialog = dialog;
   body.classList.add("dialog-open");
 }
 
@@ -88,11 +114,24 @@ function closeDialog(dialog) {
     return;
   }
 
-  dialog.close();
+  if (typeof dialog.close === "function") {
+    dialog.close();
+  } else {
+    dialog.removeAttribute("open");
+  }
+
+  if (activeDialog === dialog) {
+    activeDialog = null;
+  }
+
   body.classList.remove("dialog-open");
 }
 
 function renderSearchResults(query = "") {
+  if (!searchResults) {
+    return;
+  }
+
   const normalizedQuery = query.trim().toLowerCase();
   const matches = searchableSections.filter((item) => {
     const haystack = `${item.title} ${item.keywords}`.toLowerCase();
@@ -107,6 +146,10 @@ function renderSearchResults(query = "") {
 function prepareWhatsAppMessage(event) {
   event.preventDefault();
 
+  if (!contactForm) {
+    return;
+  }
+
   const formData = new FormData(contactForm);
   const message = [
     "Hello KARBS Furniture, I would like a quote.",
@@ -119,13 +162,17 @@ function prepareWhatsAppMessage(event) {
   window.open(`https://wa.me/263718871433?text=${encodeURIComponent(message)}`, "_blank", "noopener");
 }
 
-navToggle.addEventListener("click", toggleMenu);
+if (elementExists(navToggle)) {
+  navToggle.addEventListener("click", toggleMenu);
+}
 
-navLinks.addEventListener("click", (event) => {
-  if (event.target.closest("a")) {
-    closeMenu();
-  }
-});
+if (elementExists(navLinks)) {
+  navLinks.addEventListener("click", (event) => {
+    if (event.target.closest("a")) {
+      closeMenu();
+    }
+  });
+}
 
 window.addEventListener("scroll", () => {
   setHeaderState();
@@ -138,23 +185,32 @@ window.addEventListener("resize", () => {
   }
 });
 
-toTop.addEventListener("click", () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
+if (elementExists(toTop)) {
+  toTop.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
 
-searchToggle.addEventListener("click", () => {
-  renderSearchResults();
-  openDialog(searchDialog);
-  siteSearch.focus();
-});
+if (elementExists(searchToggle)) {
+  searchToggle.addEventListener("click", () => {
+    renderSearchResults();
+    openDialog(searchDialog);
 
-openQuote.addEventListener("click", () => openDialog(quoteDialog));
+    if (siteSearch) {
+      siteSearch.focus();
+    }
+  });
+}
+
+if (elementExists(openQuote)) {
+  openQuote.addEventListener("click", () => openDialog(quoteDialog));
+}
 
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {
   button.addEventListener("click", () => closeDialog(button.closest("dialog")));
 });
 
-[searchDialog, quoteDialog].forEach((dialog) => {
+[searchDialog, quoteDialog].filter(Boolean).forEach((dialog) => {
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) {
       closeDialog(dialog);
@@ -162,21 +218,42 @@ document.querySelectorAll("[data-close-dialog]").forEach((button) => {
   });
 
   dialog.addEventListener("close", () => {
+    if (activeDialog === dialog) {
+      activeDialog = null;
+    }
+
     body.classList.remove("dialog-open");
   });
 });
 
-siteSearch.addEventListener("input", () => renderSearchResults(siteSearch.value));
+if (elementExists(siteSearch)) {
+  siteSearch.addEventListener("input", () => renderSearchResults(siteSearch.value));
+}
 
-searchResults.addEventListener("click", (event) => {
-  if (event.target.closest("[data-search-result]")) {
-    closeDialog(searchDialog);
+if (elementExists(searchResults)) {
+  searchResults.addEventListener("click", (event) => {
+    if (event.target.closest("[data-search-result]")) {
+      closeDialog(searchDialog);
+    }
+  });
+}
+
+if (elementExists(contactForm)) {
+  contactForm.addEventListener("submit", prepareWhatsAppMessage);
+}
+
+if ("IntersectionObserver" in window) {
+  revealItems.forEach((item) => revealObserver.observe(item));
+} else {
+  revealItems.forEach((item) => item.classList.add("is-visible"));
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && activeDialog) {
+    closeDialog(activeDialog);
   }
 });
 
-contactForm.addEventListener("submit", prepareWhatsAppMessage);
-
-revealItems.forEach((item) => revealObserver.observe(item));
 setHeaderState();
 setActiveNav();
 renderSearchResults();
