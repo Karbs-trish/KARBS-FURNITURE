@@ -54,25 +54,27 @@ button {
   cursor: pointer;
 }
 
-.topbar {
+.top-bar {
   display: flex;
-  min-height: 88px;
   align-items: center;
-  gap: clamp(18px, 4vw, 58px);
-  padding: 16px clamp(20px, 4vw, 68px);
-  color: var(--white);
-  background: var(--red);
-  font-size: 1rem;
-  font-weight: 800;
+  justify-content: space-around; 
+  background-color: #e52e2e; 
+  color: #ffffff;
+  padding: 8px 16px;
+  font-size: 14px;
+  white-space: nowrap; 
 }
 
-.topbar a,
-.topbar span {
-  display: inline-flex;
+.top-bar-item {
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px; 
 }
 
+.top-bar a {
+  color: #ffffff;
+  text-decoration: none;
+}
 .contact-icon {
   display: grid;
   width: 28px;
